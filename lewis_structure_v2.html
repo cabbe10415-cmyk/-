@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>루이스 구조식 시각화</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #151820;
+      --surface2: #1c2030;
+      --border: #262c3d;
+      --border-light: #2f3650;
+      --text: #e8ecf4;
+      --text-muted: #7a84a0;
+      --text-dim: #4a5270;
+      --accent: #4f8ef7;
+      --accent-glow: rgba(79,142,247,0.15);
+      --accent2: #f7634f;
+      --accent2-glow: rgba(247,99,79,0.12);
+      --green: #3ecf8e;
+      --green-glow: rgba(62,207,142,0.12);
+      --amber: #f5a623;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-icon {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    header h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+    .header-tag {
+      font-size: 11px; font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-glow);
+      border: 1px solid rgba(79,142,247,0.3);
+      padding: 2px 10px; border-radius: 20px;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* ── Tabs ── */
+    .tab-row {
+      display: flex; gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+      flex: 1; padding: 9px 16px;
+      font-size: 13px; font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      border: none; border-radius: 9px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 2px 12px rgba(79,142,247,0.3);
+    }
+    .tab-btn:not(.active):hover { color: var(--text); background: var(--surface2); }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Input row ── */
+    .input-row { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+    .input-row input {
+      flex: 1;
+      padding: 10px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font-size: 14px;
+      font-family: 'DM Mono', monospace;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-row input:focus { border-color: var(--accent); }
+    .input-row input::placeholder { color: var(--text-dim); }
+    .btn {
+      padding: 10px 20px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 9px;
+      font-size: 13px; font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-ghost {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--border-light); background: var(--surface2); }
+
+    /* ── Molecule tags ── */
+    .mol-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0; }
+    .mol-tag {
+      font-size: 12px; font-weight: 600;
+      font-family: 'DM Mono', monospace;
+      padding: 5px 13px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+      background: var(--bg);
+      transition: all 0.15s;
+    }
+    .mol-tag:hover { border-color: var(--accent); color: var(--accent); }
+    .mol-tag.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(79,142,247,0.25);
+    }
+
+    /* ── Result card ── */
+    .result-header {
+      display: flex; align-items: baseline; gap: 12px;
+      margin-bottom: 1.25rem;
+    }
+    .mol-name { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+    .mol-formula { font-size: 13px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+
+    .canvas-wrap {
+      display: flex; justify-content: center; align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin: 0 0 1.25rem;
+      min-height: 200px;
+    }
+
+    /* ── Info grid ── */
+    .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .info-cell {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 14px;
+      transition: border-color 0.15s;
+    }
+    .info-cell:hover { border-color: var(--border-light); }
+    .info-label { font-size: 10px; color: var(--text-dim); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .info-val { font-size: 14px; font-weight: 600; font-family: 'DM Mono', monospace; }
+
+    /* ── Legend ── */
+    .legend { display: flex; gap: 18px; margin: 0.75rem 0 0; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-muted); }
+    .dot-lone { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); display: inline-block; }
+    .dot-bond { width: 18px; height: 3px; background: var(--text); display: inline-block; border-radius: 2px; opacity: 0.8; }
+
+    /* ── Error ── */
+    .err-msg { font-size: 13px; color: var(--accent2); padding: 12px; background: var(--accent2-glow); border: 1px solid rgba(247,99,79,0.2); border-radius: 9px; }
+
+    /* ── Formal charge tab ── */
+    .fc-formula {
+      background: var(--accent-glow);
+      border: 1px solid rgba(79,142,247,0.25);
+      border-radius: 10px;
+      padding: 13px 18px;
+      font-size: 13px; font-weight: 600;
+      font-family: 'DM Mono', monospace;
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.02em;
+    }
+    .fc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+    .fc-label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .fc-input {
+      width: 100%; padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font-size: 14px;
+      font-family: 'DM Mono', monospace;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .fc-input:focus { border-color: var(--accent); }
+    .fc-input::placeholder { color: var(--text-dim); }
+
+    .fc-result-box { border-radius: 11px; padding: 16px 18px; margin-top: 1rem; }
+    .fc-result-box.stable { background: var(--green-glow); border: 1px solid rgba(62,207,142,0.3); }
+    .fc-result-box.unstable { background: rgba(245,166,35,0.08); border: 1px solid rgba(245,166,35,0.3); }
+    .fc-result-val { font-size: 24px; font-weight: 700; margin-bottom: 4px; font-family: 'DM Mono', monospace; }
+    .fc-result-val.stable { color: var(--green); }
+    .fc-result-val.unstable { color: var(--amber); }
+    .fc-result-desc { font-size: 13px; }
+    .fc-result-desc.stable { color: var(--green); }
+    .fc-result-desc.unstable { color: var(--amber); }
+    .fc-steps {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 13px 16px;
+      line-height: 2;
+      font-family: 'DM Mono', monospace;
+    }
+    .fc-steps strong { color: var(--text); }
+
+    .example-row { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 1rem; }
+    .section-title { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+
+    @media (max-width: 600px) {
+      .info-grid { grid-template-columns: repeat(2, 1fr); }
+      .fc-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="header-icon">⚗</div>
+    <h1>루이스 구조식 시각화</h1>
+    <span class="header-tag">화학 융합 심화 탐구</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 탭 UI -->
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('lewis')">🔬 루이스 구조식</button>
+    <button class="tab-btn" onclick="switchTab('fc')">🧮 형식 전하 계산기</button>
+  </div>
+
+  <!-- ===== 루이스 구조식 탭 ===== -->
+  <div id="lewis-section" class="section active">
+    <div class="card">
+      <div class="input-row">
+        <input type="text" id="molInput" placeholder="화학식 입력 (예: H2O, CO2, NH3)" />
+        <button class="btn" onclick="searchMol()">검색</button>
+      </div>
+      <div class="mol-tags" id="tagArea"></div>
+    </div>
+    <div id="resultArea"></div>
+  </div>
+
+  <!-- ===== 형식 전하 계산기 탭 ===== -->
+  <div id="fc-section" class="section">
+    <div class="card">
+      <div class="fc-formula">
+        형식 전하 = 원자가 전자 수 − 비공유 전자 수 − (공유 전자쌍 수 ÷ 2)
+      </div>
+      <div class="fc-grid">
+        <div>
+          <div class="fc-label">원자 기호</div>
+          <input class="fc-input" type="text" id="fc-atom" placeholder="예: C, O, N" />
+        </div>
+        <div>
+          <div class="fc-label">원자가 전자 수</div>
+          <input class="fc-input" type="number" id="fc-val" min="0" max="8" placeholder="0 ~ 8" />
+        </div>
+        <div>
+          <div class="fc-label">비공유 전자 수</div>
+          <input class="fc-input" type="number" id="fc-lone" min="0" max="14" placeholder="0 ~ 14" />
+        </div>
+        <div>
+          <div class="fc-label">공유 전자쌍 수</div>
+          <input class="fc-input" type="number" id="fc-bond" min="0" max="6" placeholder="0 ~ 6" />
+        </div>
+      </div>
+      <button class="btn" style="width:100%" onclick="calcFC()">형식 전하 계산하기</button>
+      <div id="fc-result"></div>
+      <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border);">
+        <div class="section-title">빠른 예시 — CO₂ 구조 검증</div>
+        <div class="example-row">
+          <button class="btn btn-ghost" onclick="loadExample('C',4,0,4)">탄소 in CO₂ (이중결합×2)</button>
+          <button class="btn btn-ghost" onclick="loadExample('O',6,4,2)">산소 in CO₂ (이중결합×1)</button>
+          <button class="btn btn-ghost" onclick="loadExample('N',5,2,3)">질소 in N₂ (삼중결합)</button>
+          <button class="btn btn-ghost" onclick="loadExample('O',6,4,1)">산소 in H₂O (단일결합×2)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =============================================
+   [핵심 코드 1] 유틸리티 그리기 함수 (Canvas API)
+
+   HTML5 Canvas의 2D 컨텍스트를 사용하여
+   원자 기호, 결합선(단일·이중·삼중),
+   비공유 전자쌍(점 2개)을 직접 그립니다.
+============================================= */
+
+// 원자 기호 레이블
+function atomLabel(ctx, x, y, label, col, size=19) {
+  ctx.save();
+  ctx.font = `700 ${size}px 'DM Sans', 'Segoe UI', sans-serif`;
+  ctx.fillStyle = col;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x, y);
+  ctx.restore();
+}
+
+// 원자 텍스트의 반지름 측정 (결합선 끊는 데 사용)
+function atomRadius(ctx, label, size=19) {
+  ctx.save();
+  ctx.font = `700 ${size}px 'DM Sans', 'Segoe UI', sans-serif`;
+  const w = ctx.measureText(label).width;
+  ctx.restore();
+  return Math.max(w / 2 + 4, 12);
+}
+
+// 단일 결합 — 원자 기호와 겹치지 않도록 양 끝을 안쪽으로 잘라냄
+function singleBond(ctx, x1, y1, x2, y2, col, r1=13, r2=13) {
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  if (len < 1) return;
+  const ux = dx/len, uy = dy/len;
+  ctx.save();
+  ctx.strokeStyle = col; ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1 + ux*r1, y1 + uy*r1);
+  ctx.lineTo(x2 - ux*r2, y2 - uy*r2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 이중 결합
+function doubleBond(ctx, x1, y1, x2, y2, col, r1=13, r2=13) {
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  if (len < 1) return;
+  const ux = dx/len, uy = dy/len;
+  const ox = -uy * 3.8, oy = ux * 3.8; // 수직 오프셋
+  ctx.save();
+  ctx.strokeStyle = col; ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  for (const s of [1, -1]) {
+    ctx.beginPath();
+    ctx.moveTo(x1 + ux*r1 + ox*s, y1 + uy*r1 + oy*s);
+    ctx.lineTo(x2 - ux*r2 + ox*s, y2 - uy*r2 + oy*s);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// 삼중 결합
+function tripleBond(ctx, x1, y1, x2, y2, col, r1=13, r2=13) {
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  if (len < 1) return;
+  const ux = dx/len, uy = dy/len;
+  const ox = -uy * 5.5, oy = ux * 5.5;
+  ctx.save();
+  ctx.strokeStyle = col; ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  // 가운데 선
+  ctx.beginPath();
+  ctx.moveTo(x1 + ux*r1, y1 + uy*r1);
+  ctx.lineTo(x2 - ux*r2, y2 - uy*r2);
+  ctx.stroke();
+  // 위아래 선
+  for (const s of [1, -1]) {
+    ctx.beginPath();
+    ctx.moveTo(x1 + ux*r1 + ox*s, y1 + uy*r1 + oy*s);
+    ctx.lineTo(x2 - ux*r2 + ox*s, y2 - uy*r2 + oy*s);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* =============================================
+   [핵심 코드 2] 비공유 전자쌍 그리기 (삼각함수 활용)
+
+   angle(각도)를 라디안으로 변환 후
+   cos/sin으로 점의 좌표를 계산합니다.
+   dist: 원자 중심에서의 거리
+   gap: 두 점 사이의 간격 (수직 방향)
+============================================= */
+function lonePair(ctx, cx, cy, angleDeg, col, dist=20, gap=5.5) {
+  ctx.save();
+  ctx.fillStyle = col;
+  const rad = angleDeg * Math.PI / 180;
+  // 전자쌍 중심
+  const ex = cx + Math.cos(rad) * dist;
+  const ey = cy + Math.sin(rad) * dist;
+  // 수직 방향 오프셋 (두 점 분리)
+  const px = -Math.sin(rad) * gap;
+  const py =  Math.cos(rad) * gap;
+  for (const s of [1, -1]) {
+    ctx.beginPath();
+    ctx.arc(ex + px*s, ey + py*s, 2.8, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* =============================================
+   [핵심 코드 3] 분자 데이터 저장 (객체 구조)
+
+   각 분자의 정보를 JavaScript 객체(Object)로 저장.
+   key: 화학식 문자열 (예: 'H2O')
+   value: 분자 데이터 + draw 함수
+
+   이 구조 덕분에 화학식 입력만으로
+   즉시 해당 분자 데이터를 꺼낼 수 있습니다.
+============================================= */
+const MOLECULES = {
+  'H2O':  { name:'물',               formula:'H₂O',  shape:'굽은형',      angle:'104.5°', bondType:'단일 결합', bondPairs:2, lonePairs:2, polar:'극성',   draw: drawH2O  },
+  'CO2':  { name:'이산화 탄소',       formula:'CO₂',  shape:'선형',        angle:'180°',   bondType:'이중 결합', bondPairs:4, lonePairs:4, polar:'무극성', draw: drawCO2  },
+  'NH3':  { name:'암모니아',           formula:'NH₃',  shape:'삼각뿔형',    angle:'107°',   bondType:'단일 결합', bondPairs:3, lonePairs:1, polar:'극성',   draw: drawNH3  },
+  'CH4':  { name:'메테인',             formula:'CH₄',  shape:'정사면체형',  angle:'109.5°', bondType:'단일 결합', bondPairs:4, lonePairs:0, polar:'무극성', draw: drawCH4  },
+  'HCl':  { name:'염화 수소',          formula:'HCl',  shape:'선형',        angle:'-',      bondType:'단일 결합', bondPairs:1, lonePairs:3, polar:'극성',   draw: drawHCl  },
+  'F2':   { name:'플루오린',           formula:'F₂',   shape:'선형',        angle:'-',      bondType:'단일 결합', bondPairs:1, lonePairs:6, polar:'무극성', draw: drawF2   },
+  'N2':   { name:'질소',               formula:'N₂',   shape:'선형',        angle:'-',      bondType:'삼중 결합', bondPairs:3, lonePairs:2, polar:'무극성', draw: drawN2   },
+  'O2':   { name:'산소',               formula:'O₂',   shape:'선형',        angle:'-',      bondType:'이중 결합', bondPairs:2, lonePairs:4, polar:'무극성', draw: drawO2   },
+  'HF':   { name:'플루오린화 수소',    formula:'HF',   shape:'선형',        angle:'-',      bondType:'단일 결합', bondPairs:1, lonePairs:3, polar:'극성',   draw: drawHF   },
+  'SO2':  { name:'이산화 황',          formula:'SO₂',  shape:'굽은형',      angle:'119°',   bondType:'이중 결합', bondPairs:4, lonePairs:3, polar:'극성',   draw: drawSO2  },
+  'BF3':  { name:'삼플루오린화 붕소',  formula:'BF₃',  shape:'평면 삼각형', angle:'120°',   bondType:'단일 결합', bondPairs:3, lonePairs:9, polar:'무극성', draw: drawBF3  },
+  'BF3':  { name:'삼플루오린화 붕소',  formula:'BF₃',  shape:'평면 삼각형', angle:'120°',   bondType:'단일 결합', bondPairs:3, lonePairs:9, polar:'무극성', draw: drawBF3  }
+};
+
+/* =============================================
+   [핵심 코드 4] 버튼 자동 생성
+
+   TAG_LIST 배열을 forEach로 순회하며
+   분자 선택 버튼을 동적으로 생성합니다.
+   데이터 기반 UI 자동화의 핵심 패턴입니다.
+============================================= */
+const TAG_LIST = ['H2O','CO2','NH3','CH4','HCl','F2','N2','O2','HF','SO2','BF3'];
+const tagArea = document.getElementById('tagArea');
+TAG_LIST.forEach(key => {
+  const btn = document.createElement('button');
+  btn.className = 'mol-tag';
+  btn.textContent = MOLECULES[key].formula;
+  btn.dataset.key = key;
+  btn.onclick = () => selectMol(key);
+  tagArea.appendChild(btn);
+});
+
+/* =============================================
+   [핵심 코드 5] 입력 처리 및 예외 처리
+
+   사용자 입력을 대소문자 구분 없이 파싱하고,
+   일치하는 분자가 없을 때 오류 메시지를 출력합니다.
+============================================= */
+function searchMol() {
+  const raw = document.getElementById('molInput').value.trim();
+  const key = raw.toUpperCase();
+  const found = Object.keys(MOLECULES).find(k => k.toUpperCase() === key);
+  if (found) selectMol(found);
+  else showError(raw);
+}
+document.getElementById('molInput').addEventListener('keydown', e => { if (e.key === 'Enter') searchMol(); });
+
+function selectMol(key) {
+  document.querySelectorAll('.mol-tag').forEach(b => b.classList.toggle('active', b.dataset.key === key));
+  document.getElementById('molInput').value = key;
+  renderMol(key);
+}
+
+function showError(raw) {
+  document.querySelectorAll('.mol-tag').forEach(b => b.classList.remove('active'));
+  document.getElementById('resultArea').innerHTML =
+    `<p class="err-msg">⚠ "${raw}" 분자를 찾을 수 없습니다. 지원 목록에서 선택해 주세요.</p>`;
+}
+
+/* =============================================
+   [핵심 코드 6] 결과 카드 렌더링
+
+   선택된 분자 데이터로 HTML 카드를 생성하고,
+   Canvas에 루이스 구조식을 그립니다.
+============================================= */
+function renderMol(key) {
+  const m = MOLECULES[key];
+  const dpr = window.devicePixelRatio || 1;
+  document.getElementById('resultArea').innerHTML = `
+    <div class="card">
+      <div class="result-header">
+        <span class="mol-name">${m.name}</span>
+        <span class="mol-formula">${m.formula}</span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="molCanvas" width="360" height="220" style="max-width:100%;"></canvas>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><span class="dot-lone"></span> 비공유 전자쌍</div>
+        <div class="legend-item"><span class="dot-bond"></span> 공유 전자쌍 (결합)</div>
+      </div>
+      <div class="info-grid" style="margin-top:1rem;">
+        <div class="info-cell"><div class="info-label">분자 구조</div><div class="info-val">${m.shape}</div></div>
+        <div class="info-cell"><div class="info-label">결합각</div><div class="info-val">${m.angle}</div></div>
+        <div class="info-cell"><div class="info-label">결합 종류</div><div class="info-val">${m.bondType}</div></div>
+        <div class="info-cell"><div class="info-label">극성</div><div class="info-val">${m.polar}</div></div>
+        <div class="info-cell"><div class="info-label">공유 전자쌍</div><div class="info-val">${m.bondPairs}쌍</div></div>
+        <div class="info-cell"><div class="info-label">비공유 전자쌍</div><div class="info-val">${m.lonePairs}쌍</div></div>
+      </div>
+    </div>`;
+
+  const canvas = document.getElementById('molCanvas');
+  const ctx = canvas.getContext('2d');
+  const BOND_COL = '#e8ecf4';
+  const LONE_COL = '#f7634f';
+  m.draw(ctx, BOND_COL, LONE_COL);
+}
+
+/* ===================================================
+   각 분자별 그리기 함수
+   — 비공유 전자쌍 위치를 결합 방향 기준으로
+     정확히 계산하여 겹침 없이 배치합니다.
+=================================================== */
+
+// H₂O — O 위쪽에 비공유 전자쌍 2쌍
+function drawH2O(ctx, tc, lc) {
+  const cx=180, cy=115;
+  const ang1 = -142 * Math.PI/180;  // 왼쪽 H
+  const ang2 = -38  * Math.PI/180;  // 오른쪽 H
+  const blen = 68;
+  const lx = cx + Math.cos(ang1)*blen, ly = cy + Math.sin(ang1)*blen;
+  const rx = cx + Math.cos(ang2)*blen, ry = cy + Math.sin(ang2)*blen;
+
+  singleBond(ctx, cx,cy, lx,ly, tc, 13, 10);
+  singleBond(ctx, cx,cy, rx,ry, tc, 13, 10);
+  // O의 비공유 전자쌍 2쌍 — 좌우로 충분히 벌려서 겹침 방지
+  lonePair(ctx, cx, cy, -65,  lc, 22);  // 오른쪽 위
+  lonePair(ctx, cx, cy, -115, lc, 22);  // 왼쪽 위
+  atomLabel(ctx, cx, cy, 'O', tc);
+  atomLabel(ctx, lx, ly, 'H', tc);
+  atomLabel(ctx, rx, ry, 'H', tc);
+}
+
+// CO₂ — 선형, 이중 결합, O마다 비공유 2쌍(위아래) + 1쌍(바깥)
+function drawCO2(ctx, tc, lc) {
+  const cy=110, lx=60, cx=180, rx=300;
+  doubleBond(ctx, lx,cy, cx,cy, tc, 14, 14);
+  doubleBond(ctx, cx,cy, rx,cy, tc, 14, 14);
+  // 왼쪽 O: 바깥(왼), 위, 아래
+  lonePair(ctx, lx, cy, 180, lc, 22);
+  lonePair(ctx, lx, cy, 270, lc, 22);
+  lonePair(ctx, lx, cy,  90, lc, 22);
+  // 오른쪽 O: 바깥(오), 위, 아래
+  lonePair(ctx, rx, cy,   0, lc, 22);
+  lonePair(ctx, rx, cy, 270, lc, 22);
+  lonePair(ctx, rx, cy,  90, lc, 22);
+  atomLabel(ctx, lx, cy, 'O', tc);
+  atomLabel(ctx, cx, cy, 'C', tc);
+  atomLabel(ctx, rx, cy, 'O', tc);
+}
+
+// NH₃ — 삼각뿔, N 위에 비공유 전자쌍 1쌍
+function drawNH3(ctx, tc, lc) {
+  const cx=180, cy=105, blen=65;
+  const angles = [210, 330, 90]; // 왼쪽H, 오른쪽H, 아래H
+  angles.forEach(a => {
+    const rad = a * Math.PI/180;
+    const hx = cx + Math.cos(rad)*blen, hy = cy + Math.sin(rad)*blen;
+    singleBond(ctx, cx,cy, hx,hy, tc, 13, 10);
+    atomLabel(ctx, hx, hy, 'H', tc);
+  });
+  lonePair(ctx, cx, cy, 270, lc, 22); // N 위쪽
+  atomLabel(ctx, cx, cy, 'N', tc);
+}
+
+// CH₄ — 정사면체 2D 투영
+// 위쪽 H, 왼쪽 아래 H, 오른쪽 아래 H (실선),
+// 뒤쪽 H (점선 쐐기: 지면 뒤로 들어간 결합 표현)
+function drawCH4(ctx, tc, lc) {
+  const cx = 180, cy = 112;
+
+  // 위쪽 H
+  const topX = cx, topY = cy - 72;
+  // 왼쪽 아래 H
+  const lbX = cx - 68, lbY = cy + 58;
+  // 오른쪽 아래 H
+  const rbX = cx + 68, rbY = cy + 58;
+  // 뒤쪽 H (중앙 약간 아래 — 점선으로 표현)
+  const bkX = cx, bkY = cy + 20;
+
+  // 실선 결합 3개
+  singleBond(ctx, cx, cy, topX, topY, tc, 13, 10);
+  singleBond(ctx, cx, cy, lbX,  lbY,  tc, 13, 10);
+  singleBond(ctx, cx, cy, rbX,  rbY,  tc, 13, 10);
+
+  // 점선 결합 (뒤쪽 결합 표현)
+  ctx.save();
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = tc;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.65;
+  const dx = bkX - cx, dy = bkY - cy;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  const ux = dx/len, uy = dy/len;
+  ctx.beginPath();
+  ctx.moveTo(cx + ux*13, cy + uy*13);
+  ctx.lineTo(bkX - ux*10, bkY - uy*10);
+  ctx.stroke();
+  ctx.restore();
+
+  // 원자 레이블
+  atomLabel(ctx, topX, topY, 'H', tc);
+  atomLabel(ctx, lbX,  lbY,  'H', tc);
+  atomLabel(ctx, rbX,  rbY,  'H', tc);
+  atomLabel(ctx, bkX,  bkY,  'H', tc, 15); // 뒤쪽은 약간 작게
+  atomLabel(ctx, cx,   cy,   'C', tc);
+}
+
+// HCl — 선형, Cl에 비공유 3쌍
+function drawHCl(ctx, tc, lc) {
+  const cy=110, hx=80, clx=280;
+  singleBond(ctx, hx,cy, clx,cy, tc, 10, 15);
+  lonePair(ctx, clx, cy,   0, lc, 24);
+  lonePair(ctx, clx, cy,  90, lc, 24);
+  lonePair(ctx, clx, cy, 270, lc, 24);
+  atomLabel(ctx, hx, cy, 'H', tc);
+  atomLabel(ctx, clx, cy, 'Cl', tc, 16);
+}
+
+// F₂ — 선형, 각 F에 비공유 3쌍
+function drawF2(ctx, tc, lc) {
+  const cy=110, lx=90, rx=270;
+  singleBond(ctx, lx,cy, rx,cy, tc, 13, 13);
+  lonePair(ctx, lx, cy, 180, lc, 24);
+  lonePair(ctx, lx, cy,  90, lc, 24);
+  lonePair(ctx, lx, cy, 270, lc, 24);
+  lonePair(ctx, rx, cy,   0, lc, 24);
+  lonePair(ctx, rx, cy,  90, lc, 24);
+  lonePair(ctx, rx, cy, 270, lc, 24);
+  atomLabel(ctx, lx, cy, 'F', tc);
+  atomLabel(ctx, rx, cy, 'F', tc);
+}
+
+// N₂ — 삼중 결합, 각 N에 비공유 1쌍
+function drawN2(ctx, tc, lc) {
+  const cy=110, lx=100, rx=260;
+  tripleBond(ctx, lx,cy, rx,cy, tc, 13, 13);
+  lonePair(ctx, lx, cy, 180, lc, 24);
+  lonePair(ctx, rx, cy,   0, lc, 24);
+  atomLabel(ctx, lx, cy, 'N', tc);
+  atomLabel(ctx, rx, cy, 'N', tc);
+}
+
+// O₂ — 이중 결합, 각 O에 비공유 2쌍(위아래)
+function drawO2(ctx, tc, lc) {
+  const cy=110, lx=100, rx=260;
+  doubleBond(ctx, lx,cy, rx,cy, tc, 13, 13);
+  lonePair(ctx, lx, cy,  90, lc, 24);
+  lonePair(ctx, lx, cy, 270, lc, 24);
+  lonePair(ctx, rx, cy,  90, lc, 24);
+  lonePair(ctx, rx, cy, 270, lc, 24);
+  atomLabel(ctx, lx, cy, 'O', tc);
+  atomLabel(ctx, rx, cy, 'O', tc);
+}
+
+// HF — 선형, F에 비공유 3쌍
+function drawHF(ctx, tc, lc) {
+  const cy=110, hx=80, fx=280;
+  singleBond(ctx, hx,cy, fx,cy, tc, 10, 15);
+  lonePair(ctx, fx, cy,   0, lc, 24);
+  lonePair(ctx, fx, cy,  90, lc, 24);
+  lonePair(ctx, fx, cy, 270, lc, 24);
+  atomLabel(ctx, hx, cy, 'H', tc);
+  atomLabel(ctx, fx, cy, 'F', tc);
+}
+
+// SO₂ — 굽은형, S 위에 1쌍, 각 O에 2쌍
+function drawSO2(ctx, tc, lc) {
+  const cx=180, cy=85;
+  const ang1 = 220 * Math.PI/180;
+  const ang2 = 320 * Math.PI/180;
+  const blen = 90;
+  const lx = cx + Math.cos(ang1)*blen, ly = cy + Math.sin(ang1)*blen;
+  const rx = cx + Math.cos(ang2)*blen, ry = cy + Math.sin(ang2)*blen;
+
+  doubleBond(ctx, cx,cy, lx,ly, tc, 13, 13);
+  doubleBond(ctx, cx,cy, rx,ry, tc, 13, 13);
+
+  // S의 비공유 전자쌍 — 결합각 반대편 위쪽
+  lonePair(ctx, cx, cy, 270, lc, 22);
+
+  // 왼쪽 O — 결합 방향 기준 바깥 방향들
+  lonePair(ctx, lx, ly, 200, lc, 22);
+  lonePair(ctx, lx, ly, 290, lc, 22);
+
+  // 오른쪽 O
+  lonePair(ctx, rx, ry, 340, lc, 22);
+  lonePair(ctx, rx, ry, 250, lc, 22);
+
+  atomLabel(ctx, cx, cy, 'S', tc);
+  atomLabel(ctx, lx, ly, 'O', tc);
+  atomLabel(ctx, rx, ry, 'O', tc);
+}
+
+// BF₃ — 평면 삼각형, 각 F에 비공유 3쌍
+function drawBF3(ctx, tc, lc) {
+  const cx=180, cy=105, blen=78;
+  [90, 210, 330].forEach(a => {
+    const rad = a * Math.PI/180;
+    const fx = cx + Math.cos(rad)*blen, fy = cy + Math.sin(rad)*blen;
+    singleBond(ctx, cx,cy, fx,fy, tc, 13, 13);
+    // F의 비공유 3쌍 — 결합 방향 바깥 3방향(바깥, ±70°)
+    lonePair(ctx, fx, fy, a,       lc, 22);
+    lonePair(ctx, fx, fy, a + 75,  lc, 22);
+    lonePair(ctx, fx, fy, a - 75,  lc, 22);
+    atomLabel(ctx, fx, fy, 'F', tc);
+  });
+  atomLabel(ctx, cx, cy, 'B', tc);
+}
+
+
+/* =============================================
+   [핵심 코드 7] 형식 전하 계산 함수
+
+   공식: 원자가 전자 수 − 비공유 전자 수 − (공유 전자쌍 수 ÷ 2)
+   결과 0이면 안정(초록), 아니면 불안정(노랑) 표시
+============================================= */
+function calcFC() {
+  const atom = document.getElementById('fc-atom').value.trim() || '?';
+  const val  = parseFloat(document.getElementById('fc-val').value);
+  const lone = parseFloat(document.getElementById('fc-lone').value);
+  const bond = parseFloat(document.getElementById('fc-bond').value);
+
+  if (isNaN(val) || isNaN(lone) || isNaN(bond)) {
+    document.getElementById('fc-result').innerHTML =
+      '<p style="font-size:13px;color:var(--accent2);margin-top:10px;padding:10px 14px;background:var(--accent2-glow);border-radius:8px;">⚠ 값을 모두 입력해 주세요.</p>';
+    return;
+  }
+
+  const fc = val - lone - (bond / 2);
+  const isStable = fc === 0;
+  const cls  = isStable ? 'stable' : 'unstable';
+  const sign = fc > 0 ? '+' : '';
+  const desc = fc === 0
+    ? '형식 전하가 0 → 이 원자의 구조는 안정합니다.'
+    : fc > 0
+      ? `형식 전하 ${sign}${fc} → 전자가 부족한 상태입니다.`
+      : `형식 전하 ${fc} → 전자가 과잉인 상태입니다.`;
+
+  document.getElementById('fc-result').innerHTML = `
+    <div class="fc-result-box ${cls}">
+      <div class="fc-result-val ${cls}">${atom}의 형식 전하 = ${sign}${fc}</div>
+      <div class="fc-result-desc ${cls}">${desc}</div>
+    </div>
+    <div class="fc-steps">
+      <strong>계산 과정</strong><br>
+      원자가 전자 수: ${val}<br>
+      비공유 전자 수: ${lone}<br>
+      공유 전자쌍 수: ${bond} → ÷ 2 = ${bond/2}<br>
+      <strong>${val} − ${lone} − ${bond/2} = ${sign}${fc}</strong>
+    </div>`;
+}
+
+function loadExample(atom, val, lone, bond) {
+  document.getElementById('fc-atom').value = atom;
+  document.getElementById('fc-val').value  = val;
+  document.getElementById('fc-lone').value = lone;
+  document.getElementById('fc-bond').value = bond;
+  calcFC();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) =>
+    b.classList.toggle('active', (i===0 && tab==='lewis') || (i===1 && tab==='fc'))
+  );
+  document.getElementById('lewis-section').classList.toggle('active', tab==='lewis');
+  document.getElementById('fc-section').classList.toggle('active', tab==='fc');
+}
+
+// 초기 분자 로드
+selectMol('H2O');
+</script>
+</body>
+</html>
